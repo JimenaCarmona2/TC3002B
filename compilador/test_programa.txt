@@ -1,0 +1,5 @@
+programa ejemplo;
+vars x, y : entero;
+inicio
+escribe("Hola mundo");
+fin
