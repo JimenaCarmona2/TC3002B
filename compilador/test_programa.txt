@@ -1,5 +1,27 @@
 programa ejemplo;
-vars x, y : entero;
+vars
+  a, b, c : entero;
+  f        : flotante;
 inicio
-escribe("Hola mundo");
+{
+  a = 10;
+  b = 3;
+  f = 2.5;
+
+  c = a + b * 2;
+
+  si ( c > 15 ) {
+    escribe ( "c es mayor que 15" );
+    escribe ( c );
+  } sino {
+    escribe ( "c es menor o igual a 15" );
+  } ;
+
+  mientras ( b > 0 ) haz {
+    b = b - 1;
+    escribe ( b );
+  } ;
+
+  escribe ( a , b , c , f );
+}
 fin
