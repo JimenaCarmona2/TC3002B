@@ -10,6 +10,11 @@ class VariableTable:
     def exists(self, name):
         return name in self.variables
 
+    # Para verificar tipo de variable y agregarla en type_stack
+    def get_type(self, name):
+        if name not in self.variables:
+            raise Exception(f"Error: {name} no está declarada")
+        return self.variables[name]['tipo']
 
 class FunctionDirectory:
     def __init__(self):
@@ -41,3 +46,7 @@ class FunctionDirectory:
 
     def exists(self, name):
         return name in self.functions
+
+    # Reinicia el directorio para tests
+    def reset(self):
+        self.functions = {}
