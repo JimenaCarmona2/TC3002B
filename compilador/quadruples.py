@@ -27,15 +27,10 @@ class QuadrupleGenerator:
         self.operator_stack = []
         self.jump_stack = []
         self.quadruple_queue = []
-        self.temp_cnt = 0
-        # dirección virtual de cada temporal: nombre -> int
-        self.temp_addresses: dict[str, int] = {}
 
-    def new_temporal(self, tipo: str = "entero") -> str:
-        self.temp_cnt += 1
-        name = f"t{self.temp_cnt}"
-        self.temp_addresses[name] = self.mem.assign_temp(tipo)
-        return name
+    # Retorna la dirección virtual del temporal para usar directamente en cuádruplos
+    def new_temporal(self, tipo: str = "entero") -> int:
+        return self.mem.assign_temp(tipo)
 
     def add_quad(self, op, left, right, res):
         self.quadruple_queue.append(

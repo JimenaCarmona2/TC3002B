@@ -47,10 +47,11 @@ class MemoryManager:
 
     # Si la constante ya se utilizó, se reutiliza la dirección
     def assign_const(self, value, tipo: str) -> int:
-        if value in self._const_table:
-            return self._const_table[value]
+        key = (value, tipo) # key es (value, tipo) para evitar colisión entre 0 (entero) y 0.0 (flotante) serían la misma dirección, pero con distintos tipos.
+        if key in self._const_table:
+            return self._const_table[key]
         addr = self._next("constante", tipo)
-        self._const_table[value] = addr
+        self._const_table[key] = addr
         return addr
 
     # Resetea local y temporal en una nueva función
