@@ -12,7 +12,8 @@ reserved = {
     'inicio': 'START',
     'fin': 'END',
     'programa': 'PROGRAM',
-    'escribe': 'WRITE'
+    'escribe': 'WRITE',
+    'regresa': 'RETURN',
 }
 
 tokens = [

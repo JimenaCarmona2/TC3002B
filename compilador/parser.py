@@ -9,6 +9,7 @@ mem = MemoryManager()
 gen_quad = QuadrupleGenerator(mem)
 current_func = None
 global_func = None
+_call_stack = []  # pila de [func_name, param_idx] para llamadas anidadas
 
 # precedencia de operadores
 
@@ -21,18 +22,25 @@ precedence = (
 # reglas gramaticales
 
 def p_program(p):
-    'programa : programa_header vars funcs START cuerpo END'
+    'programa : programa_header vars funcs START programa_inicio cuerpo END'
+    gen_quad.add_quad('END', None, None, None)
     gen_quad.print_quad()
 
 def p_programa_header(p):
     'programa_header : PROGRAM ID SEMICOLON'
     global current_func, global_func
+    _call_stack.clear()
     func_dir.reset()
     gen_quad.reset()
-    mem.__init__()          # resetea todos los segmentos al compilar de nuevo
+    mem.__init__()
     current_func = p[2]
     global_func = p[2]
     func_dir.add_function(p[2], 'nula')
+    gen_quad.add_quad('GOTO', None, None, None)  # quad 0: salta al cuerpo principal (backpatch en programa_inicio)
+
+def p_programa_inicio(p):
+    'programa_inicio : empty'
+    gen_quad.backpatch(0)  # llena destino del GOTO con el índice actual (primer quad del cuerpo)
 
 # variables
 
@@ -63,12 +71,21 @@ def p_tipo(p):
 # funciones
 
 def p_funcs(p):
-    '''funcs : funcs_nula_header LBRACE vars cuerpo RBRACE SEMICOLON funcs
-             | funcs_tipo_header LBRACE vars cuerpo RBRACE SEMICOLON funcs
+    '''funcs : funcs_nula_header LBRACE vars funcs_inicio cuerpo funcs_fin RBRACE SEMICOLON funcs
+             | funcs_tipo_header LBRACE vars funcs_inicio cuerpo funcs_fin RBRACE SEMICOLON funcs
              | empty'''
     global current_func
     if len(p) > 2:
         current_func = global_func # regresa a global al salir
+
+def p_funcs_inicio(p):
+    'funcs_inicio : empty'
+    # guarda el índice del primer cuádruplo del cuerpo como punto de entrada de la función
+    func_dir.get_function(current_func)['dir_cuadruplo'] = gen_quad.quadruple_count() # se agrega directamente 'dir_cuadruplo' a la función en el directorio
+
+def p_funcs_fin(p):
+    'funcs_fin : empty'
+    gen_quad.add_quad('ENDFUNC', None, None, None)
 
 def p_funcs_nula_nombre(p):
     'funcs_nula_nombre : NULL ID'
@@ -113,6 +130,7 @@ def p_estatuto(p):
                 | ciclo
                 | llamada SEMICOLON
                 | imprime
+                | retorna
                 | LBRACKET estatuto_list RBRACKET'''
 
 # asignación
@@ -184,7 +202,10 @@ def p_factor_unary_minus(p):
     operand = gen_quad.operand_stack.pop()
     tipo = gen_quad.type_stack.pop()
     temp = gen_quad.new_temporal(tipo)
-    cero = 0 if tipo == 'entero' else 0.0
+    cero_val = 0 if tipo == 'entero' else 0.0
+    # el 0 necesita dirección virtual (ej. 3000) porque la VM interpreta todos los
+    # operandos de un quad como direcciones; un literal 0 se confundiría con la dirección 0
+    cero = mem.assign_const(cero_val, tipo)
     gen_quad.add_quad('-', cero, operand, temp)
     gen_quad.operand_stack.append(temp)
     gen_quad.type_stack.append(tipo)
@@ -224,29 +245,55 @@ def p_factor_list_llamada(p):
 
 # llamada
 
-def p_llamada(p):
-    '''llamada : ID LPAREN expresion_list RPAREN
-                | ID LPAREN RPAREN'''
+def p_llamada_header(p):
+    'llamada_header : ID LPAREN'
     func_name = p[1]
     if not func_dir.exists(func_name):
         raise Exception(f"Error semántico: función '{func_name}' no está declarada")
+    gen_quad.add_quad('ERA', func_name, None, None)
+    _call_stack.append([func_name, 0])  # [nombre_función, índice_param_actual]
+
+def p_llamada(p):
+    '''llamada : llamada_header arg_list RPAREN
+               | llamada_header RPAREN'''
+    func_name, _ = _call_stack.pop()
     func_info = func_dir.get_function(func_name)
-    num_params = len(func_info['parametros'])
-    for _ in range(num_params):
-        if gen_quad.operand_stack:
-            gen_quad.operand_stack.pop()
-            gen_quad.type_stack.pop()
-    gen_quad.add_quad('GOSUB', func_name, None, None)
+    gen_quad.add_quad('GOSUB', func_name, None, func_info.get('dir_cuadruplo'))
     ret_type = func_info['tipo_retorno']
     if ret_type != 'nula':
-        temp = gen_quad.new_temporal()
+        temp = gen_quad.new_temporal(ret_type)
         gen_quad.add_quad('RETVAL', func_name, None, temp)
         gen_quad.operand_stack.append(temp)
         gen_quad.type_stack.append(ret_type)
 
-def p_expresion_list(p):
-    '''expresion_list : expresion
-                      | expresion COMMA expresion_list'''
+def p_arg_list(p):
+    '''arg_list : arg_item
+                | arg_list COMMA arg_item'''
+
+def p_arg_item(p):
+    'arg_item : expresion'
+    func_name = _call_stack[-1][0]
+    param_idx  = _call_stack[-1][1]
+    params = func_dir.get_function(func_name)['parametros']
+    if param_idx >= len(params):
+        raise Exception(f"Demasiados argumentos para '{func_name}'")
+    param_addr = params[param_idx]['dir']
+    arg_addr = gen_quad.operand_stack.pop()
+    gen_quad.type_stack.pop()
+    gen_quad.add_quad('PARAM', arg_addr, None, param_addr)
+    _call_stack[-1][1] += 1
+
+# retorna
+
+def p_retorna(p):
+    '''retorna : RETURN expresion SEMICOLON
+               | RETURN SEMICOLON'''
+    if len(p) == 4:  # regresa con valor
+        val = gen_quad.operand_stack.pop()
+        gen_quad.type_stack.pop()
+        gen_quad.add_quad('RETURN', val, None, None)
+    else:            # regresa sin valor (función nula)
+        gen_quad.add_quad('RETURN', None, None, None)
 
 # imprime
 
