@@ -1,0 +1,15 @@
+programa factorial_ciclico;
+vars
+  n, resultado : entero;
+inicio
+{
+  n = 5;
+  resultado = 1;
+  mientras ( n != 0 ) haz {
+    resultado = resultado * n;
+    n = n - 1;
+  };
+  escribe ( "5! (ciclico) =" );
+  escribe ( resultado );
+}
+fin

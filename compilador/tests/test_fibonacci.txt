@@ -1,0 +1,25 @@
+programa fibonacci;
+entero fib ( n : entero ) {
+  vars
+    r : entero;
+  {
+    r = n;
+    si ( n > 1 ) {
+      r = fib ( n - 1 ) + fib ( n - 2 );
+    };
+    regresa r;
+  }
+};
+inicio
+{
+  escribe ( "Fibonacci fib(0)..fib(7):" );
+  escribe ( fib ( 0 ) );
+  escribe ( fib ( 1 ) );
+  escribe ( fib ( 2 ) );
+  escribe ( fib ( 3 ) );
+  escribe ( fib ( 4 ) );
+  escribe ( fib ( 5 ) );
+  escribe ( fib ( 6 ) );
+  escribe ( fib ( 7 ) );
+}
+fin

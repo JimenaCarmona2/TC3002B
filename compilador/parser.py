@@ -24,7 +24,7 @@ precedence = (
 def p_program(p):
     'programa : programa_header vars funcs START programa_inicio cuerpo END'
     gen_quad.add_quad('END', None, None, None)
-    gen_quad.print_quad()
+    #gen_quad.print_quad()
 
 def p_programa_header(p):
     'programa_header : PROGRAM ID SEMICOLON'

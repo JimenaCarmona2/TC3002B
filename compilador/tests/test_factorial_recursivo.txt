@@ -1,0 +1,18 @@
+programa factorial_recursivo;
+entero factorial ( n : entero ) {
+  vars
+    r : entero;
+  {
+    r = 1;
+    si ( n > 1 ) {
+      r = n * factorial ( n - 1 );
+    };
+    regresa r;
+  }
+};
+inicio
+{
+  escribe ( "5! (recursivo) =" );
+  escribe ( factorial ( 5 ) );
+}
+fin

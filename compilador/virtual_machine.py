@@ -108,7 +108,10 @@ class VirtualMachine:
 
             elif op in ("+", "-", "*", "/"):
                 l, r = self._resolve(q.left), self._resolve(q.right)
-                result = {"+": l + r, "-": l - r, "*": l * r, "/": l / r}[op]
+                if op == "+":   result = l + r
+                elif op == "-": result = l - r
+                elif op == "*": result = l * r
+                else:           result = l / r
                 self.mem.set(q.res, result)
                 self.ip += 1
 
