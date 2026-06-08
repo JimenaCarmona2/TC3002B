@@ -1,0 +1,27 @@
+programa factorial_funcion;
+vars
+  r : entero;
+entero factorial ( n : entero ) {
+  vars
+    resultado : entero;
+  {
+    resultado = 1;
+    mientras ( n != 0 ) haz {
+      resultado = resultado * n;
+      n = n - 1;
+    };
+    regresa resultado;
+  }
+};
+inicio
+{
+  r = factorial ( 5 );
+  escribe ( "5! (funcion ciclica) =" );
+  escribe ( r );
+  si ( r > 100 ) {
+    escribe ( "mayor a 100" );
+  } sino {
+    escribe ( "menor o igual a 100" );
+  };
+}
+fin
